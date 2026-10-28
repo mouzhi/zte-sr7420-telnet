@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zte-sr7420-telnet"
+version = "0.1.0"
+description = "Owner-operated ZTE SR7420 / BE7200 MAX LAN Telnet configuration research tool"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+readme = "README.md"
+dependencies = ["pycryptodomex>=3.20,<4"]
+
+[project.scripts]
+sr7420-telnet = "sr7420.cli:main"
+
+[tool.setuptools]
+packages = ["sr7420"]

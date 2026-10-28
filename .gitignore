@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.coverage
+.pytest_cache/
+# Router exports and credentials must never enter Git.
+*.bin
+*.xml
+*.env
+.env*
+*credentials*.json
+*login*.json
+*manifest*.json
+*report*.json
+private/
+sensitive/
+backups/
+*.log
+*.pcap*
