@@ -1,0 +1,55 @@
+--- a/src/sshpty.c
++++ b/src/sshpty.c
+@@ -48,7 +48,34 @@
+ int
+ pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, int namebuflen)
+ {
+-#if defined(HAVE_OPENPTY)
++#if defined(__linux__)
++    /* SR7420 local adaptation: use a private devpts instance, without /dev changes. */
++    int master, slave, locked = 0;
++    unsigned int number;
++    master = open("/var/run/local-ssh-pts/ptmx", O_RDWR | O_NOCTTY);
++    if (master < 0) {
++        dropbear_log(LOG_WARNING, "private ptmx open: %s", strerror(errno));
++        return 0;
++    }
++    if (ioctl(master, TIOCSPTLCK, &locked) < 0 || ioctl(master, TIOCGPTN, &number) < 0) {
++        dropbear_log(LOG_WARNING, "private ptmx initialization: %s", strerror(errno));
++        close(master);
++        return 0;
++    }
++    if (snprintf(namebuf, namebuflen, "/var/run/local-ssh-pts/%u", number) >= namebuflen) {
++        close(master);
++        return 0;
++    }
++    slave = open(namebuf, O_RDWR | O_NOCTTY);
++    if (slave < 0) {
++        dropbear_log(LOG_WARNING, "private pts open: %s", strerror(errno));
++        close(master);
++        return 0;
++    }
++    *ptyfd = master;
++    *ttyfd = slave;
++    return 1;
++#elif defined(HAVE_OPENPTY)
+ 	/* exists in recent (4.4) BSDs and OSF/1 */
+ 	char *name;
+ 	int i;
+--- a/src/svr-main.c
++++ b/src/svr-main.c
+@@ -53,6 +53,14 @@
+ 	_dropbear_exit = svr_dropbear_exit;
+ 	_dropbear_log = svr_dropbear_log;
+ 
++    /* SR7420: Telnet bootstrap can inherit blocked SIGINT/SIGPIPE.
++     * Start the standalone SSH daemon with a clean process signal mask. */
++    sigset_t startup_mask;
++    sigemptyset(&startup_mask);
++    if (sigprocmask(SIG_SETMASK, &startup_mask, NULL) < 0) {
++        dropbear_exit("Unable to reset inherited signal mask");
++    }
++
+ 	disallow_core();
+ 
+ 	if (argc < 1) {

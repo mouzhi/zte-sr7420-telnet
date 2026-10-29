@@ -20,3 +20,8 @@ sensitive/
 backups/
 *.log
 *.pcap*
+dropbearmulti*
+authorized_keys
+known_hosts*
+id_ed25519*
+lan.conf

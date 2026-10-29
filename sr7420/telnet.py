@@ -68,12 +68,15 @@ class Telnet:
         require("\n" not in value and "\r" not in value, "Invalid Telnet input")
         self.sock.sendall(value.encode() + b"\r\n")
 
-    def verify(self, username, password):
+    def login(self, username, password):
         self.receive(r"(?:login|username)\s*:")
         self.send(username)
         self.receive(r"password\s*:")
         self.send(password)
         self.receive(PROMPT)
+
+    def verify(self, username, password):
+        self.login(username, password)
         self.send("id")
         identity = self.receive(PROMPT)
         require(re.search(r"\buid=0(?:\D|$)", identity) is not None, "Login is not a verified root shell")
@@ -82,3 +85,11 @@ class Telnet:
         require(re.search(r"(?:^|[\r\n])SR7420(?:[\r\n]|$)", host) is not None,
                 "Unexpected hostname: verify the device manually")
         return {"root_verified": True, "hostname": "SR7420", "transport": "LAN Telnet"}
+
+    def start_ssh(self, username, password):
+        """Fixed bootstrap action only; no arbitrary shell command parameter."""
+        self.login(username, password)
+        self.send('/Plugin/local-ssh/start.sh; printf "\\nSR7420_SSH_START:%s\\n" "$?"')
+        reply = self.receive(PROMPT, seconds=25)
+        require(re.search(r"(?:^|[\r\n])SR7420_SSH_START:0(?:[\r\n]|$)", reply) is not None,
+                "SSH bootstrap did not report success")

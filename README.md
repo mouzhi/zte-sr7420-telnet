@@ -1,10 +1,12 @@
-# 中兴问天 BE7200 MAX / ZXSLC SR7420 开启 LAN Telnet
+# 中兴问天 BE7200 MAX / ZXSLC SR7420：LAN Telnet、SSH 密钥登录与 PTY 修复
 
-**ZTE BE7200 MAX (SR7420) LAN Telnet / root shell research notes and tools.**
+**ZTE BE7200 MAX (SR7420) LAN Telnet, key-only SSH, PTY and Ctrl+C research notes and tools.**
+
+导航：[Telnet 配置流程](#快速使用) · [SSH 密钥登录及 PTY 修复](docs/ssh-key-login.md) · [验证边界](docs/validation.md) · [隐私与安全](SECURITY.md)
 
 适用于自有设备管理员的可复现流程：备份原配置、离线生成只改四个字段的候选配置、在网页中手动恢复、验证 root Telnet 登录。针对常见的 `webFac 404`、配置导出中途断开、Python 3.13+ 没有 `telnetlib` 等问题记录了实际处理办法。
 
-**只发布开通 Telnet 所必需的代码和经验。仓库不包含任何实机配置、密码、证书、序列号、MAC 地址、网络拓扑或流量规则。测试数据全部是人工构造的最小样例。**
+**只发布该型号路由器管理权限配置所需的代码和经验。仓库不包含任何实机配置、密码、私钥、主机密钥、证书、序列号、MAC 地址、网络拓扑或业务流量规则。示例和测试数据均为人工构造。SSH 模板仅包含管理端口自身的访问限制。**
 
 ## 使用范围与免责声明
 
@@ -28,7 +30,7 @@
 | 管理入口 | LAN Telnet，TCP 23 |
 | 客户端 | Python 3.11+；本地实测 Windows / Python 3.14 |
 
-本工具**不默认支持其他固件、硬件修订或运营商定制版**。`backup` 会读取实际型号和版本，不匹配即停止。修改这个限制不意味着设备兼容。此流程不安装 SSH，也不修改固件镜像。
+本工具**不默认支持其他固件、硬件修订或运营商定制版**。`backup` 会读取实际型号和版本，不匹配即停止。修改这个限制不意味着设备兼容。下方 Telnet 流程不安装 SSH，也不修改固件镜像；SSH 为[独立的可选后续流程](docs/ssh-key-login.md)。
 
 ## 快速使用
 
@@ -108,7 +110,7 @@ python -m sr7420.cli prepare --backup-dir ~/sr7420-private/backup --output-dir ~
 4. 确认自己已保留 `original.bin`，并接受重启和短暂断网后再提交。
 5. 等待页面报告成功并让路由器自行恢复。提交后连接断开时，先检查状态，**不要重复上传**。
 
-项目故意不提供自动恢复、重启、刷机或命令执行子命令。人工确认是为了让使用者控制这一有中断风险的边界。
+Telnet 配置工具不提供自动恢复、重启、刷机或任意命令执行子命令。人工确认是为了让使用者控制这一有中断风险的边界。可选 SSH 桥接器仅能调用固定的 SSH 启动脚本，不能接受任意 shell 命令参数。
 
 ### 5. 验证实际 root 登录
 
